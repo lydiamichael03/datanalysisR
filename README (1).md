@@ -89,7 +89,7 @@ gonorrhea_project/
 ## AI Tool Disclosure
 
 Portions of this project were developed with assistance from Claude (Anthropic), an AI assistant. All code was reviewed and validated by the author. AI assistance was used for: script structure, documentation formatting, and simulation model setup.
-...This is a line from RStudio...
+...This is a line from RStudio...please work....
 ---
 
 ## References
