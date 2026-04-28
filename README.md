@@ -73,8 +73,8 @@ gonorrhea_project/
    ```
 3. Run scripts in order:
    ```r
-   source("scripts/01_data_exploration.R")
-   source("scripts/02_data_simulation.R")
+   source("Gonococcus_Data_Analysis_Trends.R")
+   source("Gonococcus_Simulation.R")
    ```
 
 ---
