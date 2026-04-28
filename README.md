@@ -38,26 +38,23 @@ See `data/data_dictionary.md` for full variable descriptions.
 ---
 
 ## Repository Structure
-
-```
 gonorrhea_project/
-├── README.md
-├── data_dictionary.md
+├── [README.md](README.md)
+├── [data_dictionary.md](data_dictionary.md)
 ├── Data/
-│   ├── gonorrhea_clean.csv
-│   ├── gonorrhea_simulated.csv
-│   └── gonorrhea_us_2000_2022 (1).csv
+│   ├── [gonorrhea_clean.csv](Data/gonorrhea_clean.csv)
+│   ├── [gonorrhea_simulated.csv](Data/gonorrhea_simulated.csv)
+│   └── [gonorrhea_us_2000_2022 (1).csv](Data/gonorrhea_us_2000_2022%20(1).csv)
 ├── Scripts/
-│   ├── Gonococcus_Data_Analysis_Trends.Rmd
-│   └── Gonococcus_Simulation.Rmd
+│   ├── [Gonococcus_Data_Analysis_Trends.Rmd](Scripts/Gonococcus_Data_Analysis_Trends.Rmd)
+│   └── [Gonococcus_Simulation.Rmd](Scripts/Gonococcus_Simulation.Rmd)
 └── Output/
     ├── figures/
-    │   ├── r0.sensitivity.png
-    │   ├── trend_by_age.png
-    │   ├── trend_by_sex.png
-    │   ├── rates_by_age_sex_latest.png
-    │   └── simulation_outcomes.png
-```
+    │   ├── [r0.sensitivity.png](Output/figures/r0.sensitivity.png)
+    │   ├── [trend_by_age.png](Output/figures/trend_by_age.png)
+    │   ├── [trend_by_sex.png](Output/figures/trend_by_sex.png)
+    │   ├── [rates_by_age_sex_latest.png](Output/figures/rates_by_age_sex_latest.png)
+    │   └── [simulation_outcomes.png](Output/figures/simulation_outcomes.png)
 
 ---
 
