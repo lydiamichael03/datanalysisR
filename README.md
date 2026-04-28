@@ -60,8 +60,8 @@ Output:
 [r0_sensitivity.png](Outputs/r0_sensitivity.png);
 [trend_by_age.png](Outputs/trend_by_age.png);
 [trend_by_sex.png](Outputs/trend_by_sex.png);
-[rates_by_age_sex_latest.png](Output/rates_by_age_sex_latest.png);
-[simulation_outcomes.png](Output/simulation_outcomes.png)
+[rates_by_age_sex_latest.png](Outputs/rates_by_age_sex_latest.png);
+[simulation_outcomes.png](Outputs/simulation_outcomes.png)
 
 ---
 
