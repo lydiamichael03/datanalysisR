@@ -57,7 +57,7 @@ Scripts:
 
 ----
 Output:
-[r0.sensitivity.png](Output/figures/r0.sensitivity.png);
+[r0_sensitivity.png](Output/figures/r0_sensitivity.png);
 [trend_by_age.png](Output/figures/trend_by_age.png);
 [trend_by_sex.png](Output/figures/trend_by_sex.png);
 [rates_by_age_sex_latest.png](Output/figures/rates_by_age_sex_latest.png);
