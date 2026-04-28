@@ -1,0 +1,218 @@
+---
+title: "Gonorrhea Surveillance and Trend Analysis, United States 2000–2022"
+subtitle: "01 — Data Exploration"
+author: "[Your Name]"
+date: "2026-03-03"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    highlight: tango
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width  = 8,
+  fig.height = 5,
+  dpi     = 300
+)
+```
+
+## 1. Load Libraries
+
+```{r libraries}
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(tidyr)
+library(scales)
+```
+
+## 2. Load Raw Data
+
+```{r load-data}
+raw_data <- read_csv("gonorrhea_us_2000_2022.csv",
+                     col_types = cols(
+                       year       = col_integer(),
+                       sex        = col_character(),
+                       age_group  = col_character(),
+                       cases      = col_integer(),
+                       rate       = col_double(),
+                       population = col_integer()
+                     ))
+
+cat("Dimensions:", dim(raw_data), "\n")
+cat("Years covered:", paste(sort(unique(raw_data$year)), collapse = ", "), "\n")
+cat("Sex categories:", paste(unique(raw_data$sex), collapse = ", "), "\n")
+cat("Age groups:", paste(unique(raw_data$age_group), collapse = ", "), "\n")
+cat("\nMissing values per column:\n")
+print(colSums(is.na(raw_data)))
+```
+
+## 3. Clean and Process Data
+
+```{r clean-data}
+gonorrhea_clean <- raw_data %>%
+  mutate(
+    sex = factor(sex, levels = c("Male", "Female")),
+    age_group = factor(age_group,
+                       levels = c("15-19", "20-24", "25-29", "30-34",
+                                  "35-44", "45-54", "55-64", "65+")),
+    rate_log = log10(rate + 0.001)
+  ) %>%
+  filter(!is.na(rate), rate >= 0)
+```
+
+### Summary Statistics: Case Rate per 100,000
+
+```{r summary-by-sex}
+gonorrhea_clean %>%
+  group_by(sex) %>%
+  summarise(
+    mean_rate   = mean(rate, na.rm = TRUE),
+    median_rate = median(rate, na.rm = TRUE),
+    min_rate    = min(rate, na.rm = TRUE),
+    max_rate    = max(rate, na.rm = TRUE),
+    .groups     = "drop"
+  )
+```
+
+### Rates by Year (Both Sexes Combined)
+
+```{r summary-by-year}
+gonorrhea_clean %>%
+  group_by(year) %>%
+  summarise(
+    total_cases   = sum(cases, na.rm = TRUE),
+    weighted_rate = sum(cases) / sum(population) * 1e5,
+    .groups = "drop"
+  )
+```
+
+```{r save-data, include=FALSE}
+write_csv(gonorrhea_clean, "dgonorrhea_clean.csv")
+```
+
+## 4. Visualization
+
+```{r color-palette, include=FALSE}
+dir.create("output/figures", recursive = TRUE, showWarnings = FALSE)
+dir.create("output/reports",  recursive = TRUE, showWarnings = FALSE)
+
+sex_colors <- c("Male" = "#2166ac", "Female" = "#d6604d")
+```
+
+### Figure 1: Overall Trend by Sex
+
+```{r fig1-trend-by-sex}
+annual_by_sex <- gonorrhea_clean %>%
+  group_by(year, sex) %>%
+  summarise(
+    total_cases = sum(cases),
+    total_pop   = sum(population),
+    agg_rate    = total_cases / total_pop * 1e5,
+    .groups = "drop"
+  )
+
+p1 <- ggplot(annual_by_sex, aes(x = year, y = agg_rate, color = sex, group = sex)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +
+  scale_color_manual(values = sex_colors, name = "Sex") +
+  scale_x_continuous(breaks = seq(2000, 2022, by = 3)) +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title    = "Gonorrhea Case Rates by Sex, United States, 2000–2022",
+    subtitle = "Cases per 100,000 population",
+    x        = "Year",
+    y        = "Rate per 100,000",
+    caption  = "Source: CDC STI Surveillance Data"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title       = element_text(face = "bold"),
+    legend.position  = "bottom",
+    panel.grid.minor = element_blank()
+  )
+
+p1
+ggsave("output/figures/trend_by_sex.png", plot = p1, width = 8, height = 5, dpi = 300)
+```
+
+### Figure 2: Heatmap by Age Group and Year
+
+```{r fig2-heatmap-age-year, fig.width=9, fig.height=5.5}
+age_year_rate <- gonorrhea_clean %>%
+  group_by(year, age_group) %>%
+  summarise(
+    agg_rate = sum(cases) / sum(population) * 1e5,
+    .groups = "drop"
+  )
+
+p2 <- ggplot(age_year_rate, aes(x = year, y = age_group, fill = agg_rate)) +
+  geom_tile(color = "white", linewidth = 0.3) +
+  scale_fill_gradient2(
+    low      = "#f7fbff",
+    mid      = "#6baed6",
+    high     = "#08306b",
+    midpoint = 200,
+    name     = "Rate\nper 100k",
+    labels   = comma
+  ) +
+  scale_x_continuous(breaks = seq(2000, 2022, by = 3)) +
+  labs(
+    title    = "Gonorrhea Rates by Age Group, United States, 2000–2022",
+    subtitle = "Cases per 100,000 population (both sexes combined)",
+    x        = "Year",
+    y        = "Age Group",
+    caption  = "Source: CDC STI Surveillance Data"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title  = element_text(face = "bold"),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid  = element_blank()
+  )
+
+p2
+ggsave("output/figures/trend_by_age.png", plot = p2, width = 9, height = 5.5, dpi = 300)
+```
+
+### Figure 3: Most Recent Year by Age Group and Sex
+
+```{r fig3-bar-latest-year, fig.width=9}
+latest_year <- max(gonorrhea_clean$year)
+
+p3 <- gonorrhea_clean %>%
+  filter(year == latest_year) %>%
+  group_by(age_group, sex) %>%
+  summarise(rate = mean(rate), .groups = "drop") %>%
+  ggplot(aes(x = age_group, y = rate, fill = sex)) +
+  geom_col(position = "dodge", width = 0.7) +
+  scale_fill_manual(values = sex_colors, name = "Sex") +
+  scale_y_continuous(labels = comma) +
+  labs(
+    title    = paste0("Gonorrhea Case Rates by Age Group and Sex, ", latest_year),
+    subtitle = "Cases per 100,000 population",
+    x        = "Age Group",
+    y        = "Rate per 100,000",
+    caption  = "Source: CDC STI Surveillance Data"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title       = element_text(face = "bold"),
+    legend.position  = "bottom",
+    panel.grid.minor = element_blank()
+  )
+
+p3
+ggsave("output/figures/rates_by_age_sex_latest.png", plot = p3, width = 9, height = 5, dpi = 300)
+```
+
+---
+
+*Data Exploration Complete*

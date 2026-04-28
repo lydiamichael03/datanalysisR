@@ -1,0 +1,265 @@
+---
+title: "Gonorrhea Surveillance and Trend Analysis, United States 2000–2022"
+subtitle: "02 — Stochastic SIS Model Simulation"
+author: "[Your Name]"
+date: "2026-03-03"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: flatly
+    highlight: tango
+    df_print: kable
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width  = 9,
+  fig.height = 5.5,
+  dpi     = 300
+)
+```
+
+## Background
+
+Gonorrhea is modeled as an **SIS** (Susceptible–Infectious–Susceptible) process,
+reflecting the absence of lasting immunity after recovery. The basic reproduction
+number is defined as $R_0 = \beta / \gamma$. Parameters are calibrated
+approximately to observed US gonorrhea dynamics.
+
+## 1. Load Libraries
+
+```{r libraries}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(readr)
+
+set.seed(6270)  # For reproducibility
+```
+
+## 2. SIS Model Function
+
+```{r sis-function}
+#' Stochastic SIS model for gonorrhea
+#'
+#' @param N       Total population size
+#' @param I0      Initial number infectious
+#' @param beta    Transmission rate (contacts/week × P(transmission))
+#' @param gamma   Recovery rate (1 / mean duration in weeks)
+#' @param t_max   Number of time steps (weeks)
+#' @param dt      Time step size (default 1 week)
+#' @return A data frame: time, S, I, S_prop, I_prop
+run_sis <- function(N = 100000, I0 = 500, beta, gamma,
+                    t_max = 260, dt = 1) {
+
+  S <- numeric(t_max + 1)
+  I <- numeric(t_max + 1)
+
+  S[1] <- N - I0
+  I[1] <- I0
+
+  for (t in 1:t_max) {
+    lambda         <- beta * I[t] / N
+    new_infected   <- rbinom(1, S[t], prob = 1 - exp(-lambda * dt))
+    new_recovered  <- rbinom(1, I[t], prob = 1 - exp(-gamma * dt))
+    S[t + 1] <- max(0, S[t] - new_infected + new_recovered)
+    I[t + 1] <- max(0, I[t] + new_infected - new_recovered)
+  }
+
+  data.frame(
+    time   = 0:t_max,
+    S      = S,
+    I      = I,
+    S_prop = S / N,
+    I_prop = I / N
+  )
+}
+```
+
+## 3. Define Scenarios
+
+Gonorrhea natural history assumptions:
+
+- **Mean duration of infection:** ~5 weeks → $\gamma = 0.20$/week  
+- **$R_0$** estimated at 1.5–2.5 in endemic settings
+
+| Scenario | $\beta$ | $\gamma$ | $R_0$ | Description |
+|---|---|---|---|---|
+| Baseline | 0.36 | 0.20 | 1.8 | Endemic equilibrium |
+| High Transmission | 0.56 | 0.20 | 2.8 | Higher-risk network / untreated population |
+| Intervention | 0.22 | 0.20 | 1.1 | 50% reduction via contact tracing + treatment |
+
+```{r define-scenarios}
+scenarios <- list(
+  baseline     = list(beta = 0.36, gamma = 0.20, label = "Baseline (R0=1.8)"),
+  high_beta    = list(beta = 0.56, gamma = 0.20, label = "High Transmission (R0=2.8)"),
+  intervention = list(beta = 0.22, gamma = 0.20, label = "Intervention (R0=1.1)")
+)
+
+n_sims <- 100     # Stochastic runs per scenario
+N      <- 100000
+I0     <- 500
+t_max  <- 260     # 5 years in weeks
+```
+
+## 4. Run Simulations
+
+```{r run-simulations}
+all_results <- map_dfr(names(scenarios), function(sc_name) {
+  sc <- scenarios[[sc_name]]
+  R0 <- sc$beta / sc$gamma
+
+  cat(sprintf("  Scenario: %-12s | beta=%.2f | gamma=%.2f | R0=%.2f\n",
+              sc_name, sc$beta, sc$gamma, R0))
+
+  map_dfr(1:n_sims, function(sim_id) {
+    run_sis(N = N, I0 = I0,
+            beta  = sc$beta,
+            gamma = sc$gamma,
+            t_max = t_max) %>%
+      mutate(
+        sim_id   = sim_id,
+        scenario = sc_name,
+        label    = sc$label,
+        beta     = sc$beta,
+        gamma    = sc$gamma,
+        R0       = R0
+      )
+  })
+})
+
+cat(sprintf("Total rows generated: %d\n", nrow(all_results)))
+```
+
+## 5. Summarize Results
+
+```{r summarize}
+sim_summary <- all_results %>%
+  group_by(scenario, label, time, beta, gamma, R0) %>%
+  summarise(
+    mean_I  = mean(I_prop),
+    lower_I = quantile(I_prop, 0.025),
+    upper_I = quantile(I_prop, 0.975),
+    .groups = "drop"
+  )
+```
+
+### Equilibrium Prevalence at Week 260
+
+```{r equilibrium-table}
+sim_summary %>%
+  filter(time == t_max) %>%
+  mutate(
+    mean_pct  = round(mean_I  * 100, 2),
+    lower_pct = round(lower_I * 100, 2),
+    upper_pct = round(upper_I * 100, 2)
+  ) %>%
+  select(scenario, R0, mean_pct, lower_pct, upper_pct)
+```
+
+```{r save-sim-data, include=FALSE}
+write_csv(
+  all_results %>% select(sim_id, time, S, I, S_prop, I_prop, scenario, beta, gamma, R0),
+  "gonorrhea_simulated.csv"
+)
+```
+
+## 6. Visualize Results
+
+```{r color-labels, include=FALSE}
+scenario_colors <- c(
+  "baseline"     = "#2166ac",
+  "high_beta"    = "#d6604d",
+  "intervention" = "#4dac26"
+)
+
+scenario_labels <- c(
+  "baseline"     = "Baseline (R0 = 1.8)",
+  "high_beta"    = "High Transmission (R0 = 2.8)",
+  "intervention" = "Intervention (R0 = 1.1)"
+)
+```
+
+### Figure 1: Simulation Ribbon Plot
+
+```{r fig1-sim-ribbon}
+p_sim <- ggplot(sim_summary,
+                aes(x     = time / 52,
+                    y     = mean_I * 100,
+                    color = scenario,
+                    fill  = scenario)) +
+  geom_ribbon(aes(ymin = lower_I * 100, ymax = upper_I * 100),
+              alpha = 0.2, color = NA) +
+  geom_line(linewidth = 1.1) +
+  scale_color_manual(values = scenario_colors, labels = scenario_labels, name = "Scenario") +
+  scale_fill_manual( values = scenario_colors, labels = scenario_labels, name = "Scenario") +
+  scale_x_continuous(breaks = 0:5) +
+  labs(
+    title    = "Stochastic SIS Model: Gonorrhea Transmission Scenarios",
+    subtitle = "Mean % infectious ± 95% simulation interval (n=100 runs per scenario)",
+    x        = "Time (Years)",
+    y        = "% Population Infectious",
+    caption  = paste0("N = ", format(N, big.mark = ","),
+                      "; Initial infectious = ", I0,
+                      "; gamma = 0.20/week (mean duration ~5 weeks)")
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title       = element_text(face = "bold"),
+    legend.position  = "bottom",
+    panel.grid.minor = element_blank()
+  )
+
+p_sim
+ggsave("output/figures/simulation_outcomes.png", plot = p_sim,
+       width = 9, height = 5.5, dpi = 300)
+```
+
+### Figure 2: R0 Sensitivity — Equilibrium Prevalence
+
+```{r fig2-r0-sensitivity, fig.width=8, fig.height=5}
+r0_vals <- seq(1.0, 3.0, by = 0.1)
+eq_prev <- ifelse(r0_vals > 1, (1 - 1 / r0_vals) * 100, 0)
+r0_df   <- data.frame(R0 = r0_vals, eq_prevalence = eq_prev)
+
+sc_points <- data.frame(
+  R0            = c(1.8, 2.8, 1.1),
+  eq_prevalence = c((1 - 1/1.8)*100, (1 - 1/2.8)*100, (1 - 1/1.1)*100),
+  label         = c("Baseline", "High\nTransmission", "Intervention"),
+  color         = c("#2166ac", "#d6604d", "#4dac26")
+)
+
+p_r0 <- ggplot(r0_df, aes(x = R0, y = eq_prevalence)) +
+  geom_line(linewidth = 1.2, color = "grey40") +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey60") +
+  geom_point(data = sc_points, aes(color = color), size = 4, show.legend = FALSE) +
+  geom_text( data = sc_points, aes(label = label, color = color),
+             vjust = -0.8, size = 3.5, show.legend = FALSE) +
+  scale_color_identity() +
+  scale_x_continuous(breaks = seq(1.0, 3.0, by = 0.25)) +
+  labs(
+    title    = "SIS Model: Equilibrium Prevalence as a Function of R0",
+    subtitle = "Deterministic analytical result; points show simulated scenarios",
+    x        = "Basic Reproduction Number (R0)",
+    y        = "Equilibrium Prevalence (%)",
+    caption  = "Below R0=1: pathogen cannot sustain; above R0=1: endemic equilibrium"
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(
+    plot.title       = element_text(face = "bold"),
+    panel.grid.minor = element_blank()
+  )
+
+p_r0
+ggsave("output/figures/r0_sensitivity.png", plot = p_r0,
+       width = 8, height = 5, dpi = 300)
+```
+
+---
+
+*Simulation Complete*
