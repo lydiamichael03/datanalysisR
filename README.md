@@ -57,11 +57,11 @@ Scripts:
 
 ----
 Output:
-[r0_sensitivity.png](Output/figures/r0_sensitivity.png);
-[trend_by_age.png](Output/figures/trend_by_age.png);
-[trend_by_sex.png](Output/figures/trend_by_sex.png);
-[rates_by_age_sex_latest.png](Output/figures/rates_by_age_sex_latest.png);
-[simulation_outcomes.png](Output/figures/simulation_outcomes.png)
+[r0_sensitivity.png](Outputs/r0_sensitivity.png);
+[trend_by_age.png](Outputs/trend_by_age.png);
+[trend_by_sex.png](Outputs/trend_by_sex.png);
+[rates_by_age_sex_latest.png](Output/rates_by_age_sex_latest.png);
+[simulation_outcomes.png](Output/simulation_outcomes.png)
 
 ---
 
