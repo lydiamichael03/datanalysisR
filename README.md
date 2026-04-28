@@ -46,17 +46,17 @@ gonorrhea_project/
 ├── Data/
 │   ├── gonorrhea_clean.csv
 │   ├── gonorrhea_simulated.csv
-│   ├── gonorrhea_us_2000_2022 (1).csv
-├── scripts/
-│   ├── 01_data_exploration.R
-│   └── 02_data_simulation.R
-└── output/
+│   └── gonorrhea_us_2000_2022 (1).csv
+├── Scripts/
+│   ├── Gonococcus_Data_Analysis_Trends.Rmd
+│   └── Gonococcus_Simulation.Rmd
+└── Output/
     ├── figures/
-    │   ├── trend_by_sex.png
+    │   ├── r0.sensitivity.png
     │   ├── trend_by_age.png
+    │   ├── trend_by_sex.png
+    │   ├── rates_by_age_sex_latest.png
     │   └── simulation_outcomes.png
-    └── reports/
-        └── gonorrhea_analysis_report.html
 ```
 
 ---
