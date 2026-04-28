@@ -42,14 +42,11 @@ See `data/data_dictionary.md` for full variable descriptions.
 ```
 gonorrhea_project/
 ├── README.md
-├── .gitignore
-├── data/
-│   ├── data_dictionary.md
-│   ├── raw/
-│   │   └── gonorrhea_us_2000_2022.csv
-│   └── processed/
-│       ├── gonorrhea_clean.csv
-│       └── gonorrhea_simulated.csv
+├── data_dictionary.md
+├── Data/
+│   ├── gonorrhea_clean.csv
+│   ├── gonorrhea_simulated.csv
+│   ├── gonorrhea_us_2000_2022 (1).csv
 ├── scripts/
 │   ├── 01_data_exploration.R
 │   └── 02_data_simulation.R
