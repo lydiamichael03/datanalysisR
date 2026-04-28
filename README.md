@@ -38,17 +38,25 @@ See `data/data_dictionary.md` for full variable descriptions.
 ---
 
 ## Repository Structure
-gonorrhea_project/
+Gonorrhea Project Details:
  [README.md](README.md)
  [data_dictionary.md](data_dictionary.md)
-Data/
+
+ ---
+ 
+Data Files:
 [gonorrhea_clean.csv](Data/gonorrhea_clean.csv)
 [gonorrhea_simulated.csv](Data/gonorrhea_simulated.csv)
 [gonorrhea_us_2000_2022 (1).csv](Data/gonorrhea_us_2000_2022%20(1).csv)
-Scripts/
+
+---
+
+Scripts:
 [Gonococcus_Data_Analysis_Trends.Rmd](Scripts/Gonococcus_Data_Analysis_Trends.Rmd)
 [Gonococcus_Simulation.Rmd](Scripts/Gonococcus_Simulation.Rmd)
-Output/
+
+----
+Output:
 [r0.sensitivity.png](Output/figures/r0.sensitivity.png)
 [trend_by_age.png](Output/figures/trend_by_age.png)
 [trend_by_sex.png](Output/figures/trend_by_sex.png)
