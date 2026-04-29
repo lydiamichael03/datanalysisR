@@ -21,6 +21,8 @@ Cornell University
 2. What demographic groups are disproportionately affected?
 3. Under simulated transmission scenarios, what intervention thresholds could reduce incidence most effectively?
 
+Link to Shiny App: https://lydiamic.shinyapps.io/Gonococcus_App/
+
 ---
 
 ## Data Source and Description
