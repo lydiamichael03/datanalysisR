@@ -13,6 +13,9 @@ Department of Public Health
 Cornell University
 📧 [lm957@cornell.edu]
 
+<img width="255" height="359" alt="MSU Photo - Copy" src="https://github.com/user-attachments/assets/d4ce3f54-e64a-484a-a9c7-e8e2e880a8e9" />
+
+
 ---
 
 ## Research Question / Objectives
@@ -22,6 +25,9 @@ Cornell University
 3. Under simulated transmission scenarios, what intervention thresholds could reduce incidence most effectively?
 
 Link to Shiny App: [https://lydiamic.shinyapps.io/Gonococcus_App/](https://lydiamic.shinyapps.io/Gonococcus_Trends/)
+
+<img width="800" height="534" alt="image" src="https://github.com/user-attachments/assets/3877a1d1-fafc-4d29-ab90-c3995af20b0f" />
+
 
 ---
 
