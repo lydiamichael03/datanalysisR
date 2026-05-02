@@ -27,7 +27,7 @@ Cornell University |
 
 Link to Shiny App: [https://lydiamic.shinyapps.io/Gonococcus_App/](https://lydiamic.shinyapps.io/Gonococcus_Trends/)
 
-<img width="800" height="534" alt="image" src="https://github.com/user-attachments/assets/3877a1d1-fafc-4d29-ab90-c3995af20b0f" />
+<img width="450" height="300" alt="image" src="https://github.com/user-attachments/assets/068a7d8e-8f2f-417a-9219-db30d5cf55f1" />
 
 
 ---
