@@ -45,6 +45,7 @@ ui <- fluidPage(
       div(
         class = "info-box",
         h4("Background", style = "color:#2c4a6e; margin-top:0;"),
+        p("Link to Relevant GitHub: https://github.com/lydiamichael03/datanalysisR.git"),
         p("Gonorrhea is a sexually transmitted infection (STI) caused by the bacterium ",
           em("Neisseria gonorrhoeae"), ". It is one of the most commonly reported
           infectious diseases in the United States, affecting the urogenital tract,

@@ -1,0 +1,13 @@
+name: Gonococcus_Trends
+title: Gonococcus_Trends
+username: lydiamic
+account: lydiamic
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17258968
+bundleId: 11937836
+url: https://lydiamic.shinyapps.io/Gonococcus_Trends/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: .RData
