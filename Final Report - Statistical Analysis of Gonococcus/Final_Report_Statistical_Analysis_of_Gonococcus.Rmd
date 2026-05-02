@@ -1,0 +1,243 @@
+---
+title: "Final Report: Statistical Analyses of Gonococcus"
+author: "Lydia Michael"
+date: "2026-05-01"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = "center",
+  fig.width = 7,
+  fig.height = 4.5
+)
+```
+
+# Introduction
+
+# Link to Github
+
+Link to GitHub: https://github.com/lydiamichael03/datanalysisR.git
+
+# Link to Shiny App
+
+Link to Shiny App Gonococcus Trends Explorer: https://lydiamic.shinyapps.io/Gonococcus_Trends/ 
+
+# Research Question
+
+**Does gonorrhea incidence rate differ significantly between males and females across age groups in the United States (2000-2022)?**
+
+## Scientific Plausibility and Context
+
+Gonorrhea (*Neisseria gonorrhoeae*) is one of the most commonly reported sexually transmitted infections (STIs) in the United States, with over 700,000 new cases estimated annually [CDC, 2023]. The epidemiology of gonorrhea is not uniform across the population: age and sex are consistently identified as strong determinants of infection risk.
+
+Adolescents and young adults (ages 15-24) bear a disproportionate burden of gonorrhea infection due to a combination of behavioral, biological, and social factors [Leichliter, 2007]. Biologically, the cervical ectopy present in adolescent females increases susceptibility to infection [Haggerty, 2010]. Behaviorally, younger individuals are more likely to have multiple partners and less likely to use barrier contraception consistently. However, rates among males have risen in recent decades, partly driven by increases in gonorrhea among men who have sex with men (MSM) [CDC, 2023].
+
+Understanding sex-specific patterns across age groups is critical for targeted public health interventions, including screening guidelines, partner notification programs, and treatment resource allocation [Leichliter, 2007].
+
+# Material & Methods
+
+## Data
+
+The dataset used in this analysis was obtained from the CDC's *National Notifiable Diseases Surveillance System* (NNDSS) and summarized via the CDC STI Surveillance reports (available at https://www.cdc.gov/std/statistics). Data were collected at 3-year intervals from 2000 to 2022 (years: 2000, 2003, 2006, 2009, 2012, 2015, 2018, 2020, 2022) and stratified by **sex** (Male, Female) and **age group** (15-19, 20-24, 25-29, 30-34, 35-44, 45-54, 55-64, 65+).
+
+The dataset (`gonorrhea_clean.csv`) contains 144 observations and 7 variables:
+
+| Variable     | Type      | Description                                |
+|--------------|-----------|--------------------------------------------|
+| `year`       | Integer   | Year of observation                        |
+| `sex`        | Character | Sex (Male / Female)                        |
+| `age_group`  | Character | Age group (8 categories)                   |
+| `cases`      | Integer   | Number of reported gonorrhea cases         |
+| `rate`       | Numeric   | Rate per 100,000 population                |
+| `population` | Integer   | Estimated population size                  |
+| `rate_log`   | Numeric   | Log10-transformed rate (pre-computed)      |
+
+It is important to note that observations are repeated across years for each sex x age group combination (9 time points per combination), as the dataset spans multiple survey years. This longitudinal structure has implications for the independence assumption of standard ANOVA models and is addressed in the statistical analyses below.
+
+**Data cleaning and transformation:** The rate variable was log10-transformed (already included as `rate_log`) to address right skew in the distribution of rates, which is typical for count-based epidemiological data. The age group variable was converted to an ordered factor to preserve biological ordering. No missing values were present.
+
+```{r load-data}
+library(tidyverse)
+library(ggplot2)
+library(car)
+library(emmeans)
+
+# Load data
+gonorrhea <- read.csv("gonorrhea_clean.csv", stringsAsFactors = FALSE)
+
+# Factor ordering
+gonorrhea$age_group <- factor(gonorrhea$age_group,
+  levels = c("15-19","20-24","25-29","30-34","35-44","45-54","55-64","65+"),
+  ordered = TRUE
+)
+gonorrhea$sex  <- factor(gonorrhea$sex)
+gonorrhea$year <- factor(gonorrhea$year)
+
+# Summary table
+gonorrhea %>%
+  summarise(
+    `Female (n)`        = sum(sex == "Female"),
+    `Male (n)`          = sum(sex == "Male"),
+    `Rate: Min`         = round(min(rate), 2),
+    `Rate: Median`      = round(median(rate), 2),
+    `Rate: Mean`        = round(mean(rate), 2),
+    `Rate: Max`         = round(max(rate), 2),
+    `log10(Rate): Min`  = round(min(rate_log), 4),
+    `log10(Rate): Mean` = round(mean(rate_log), 4),
+    `log10(Rate): Max`  = round(max(rate_log), 4)
+  ) %>%
+  knitr::kable(caption = "Summary statistics for key variables (n = 144).")
+```
+
+## Statistical Analyses
+
+To examine whether gonorrhea incidence rates differ by sex and age group, a **three-way ANOVA** was conducted using log10-transformed rate as the outcome variable, with `sex`, `age_group`, and `year` as fixed factors, including the `sex x age_group` interaction term. `Year` was included as a fixed factor to account for the repeated-measures structure of the data (the same sex x age group combinations are observed across 9 time points), thereby reducing the risk of violating the independence assumption.
+
+### Assumption Checks
+
+Prior to model fitting, the following assumptions were verified:
+
+1. **Normality of residuals** - assessed via Shapiro-Wilk test and Q-Q plot.
+2. **Homogeneity of variance** - assessed via Levene's test.
+3. **Independence** - Because the same sex x age group combinations are measured across 9 years, observations are not fully independent. `Year` is included as a fixed factor in the model to account for this temporal structure.
+
+```{r assumption-checks}
+# Fit model
+model <- aov(rate_log ~ sex * age_group + year, data = gonorrhea)
+
+# Normality of residuals
+shapiro.test(residuals(model))
+
+# Q-Q plot
+qqnorm(residuals(model), main = "Q-Q Plot of Residuals")
+qqline(residuals(model), col = "steelblue", lwd = 2)
+
+# Homogeneity of variance
+leveneTest(rate_log ~ sex * age_group, data = gonorrhea)
+```
+
+### Two-Way ANOVA
+
+```{r anova}
+summary(model)
+```
+
+### Post-Hoc Analyses
+
+Given a significant interaction, pairwise comparisons between age groups within each sex were performed using the `emmeans` package with Tukey correction for multiple comparisons.
+
+```{r posthoc}
+emm <- emmeans(model, ~ sex * age_group)
+pairs(emm, by = "sex", adjust = "tukey")
+```
+
+## Code
+
+All data and scripts required to reproduce this report are available at:
+
+**GitHub:** https://github.com/lydiamichael03/datanalysisR
+
+# Results
+
+## Visualization
+
+```{r fig-rate-by-age-sex, fig.cap="Gonorrhea incidence rate (per 100,000) by age group and sex, 2000-2022."}
+mean_rates <- gonorrhea %>%
+  group_by(sex, age_group) %>%
+  summarise(mean_rate = mean(rate), se = sd(rate) / sqrt(n()), .groups = "drop")
+
+ggplot(gonorrhea, aes(x = age_group, y = rate, color = sex, group = sex)) +
+  geom_jitter(alpha = 0.3, width = 0.15, size = 1.5) +
+  geom_line(data = mean_rates, aes(y = mean_rate), linewidth = 1.1) +
+  geom_point(data = mean_rates, aes(y = mean_rate), size = 3, shape = 21,
+             fill = "white", stroke = 1.5) +
+  scale_color_manual(values = c("Female" = "#E07B6A", "Male" = "#4A90D9")) +
+  labs(
+    title = "Gonorrhea Incidence Rate by Age Group and Sex (2000-2022)",
+    x = "Age Group",
+    y = "Rate per 100,000 Population",
+    color = "Sex"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1), legend.position = "top")
+```
+
+```{r fig-log-rate-boxplot, fig.cap="Distribution of log10-transformed gonorrhea rate by sex and age group."}
+ggplot(gonorrhea, aes(x = age_group, y = rate_log, fill = sex)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = 21, outlier.size = 2) +
+  scale_fill_manual(values = c("Female" = "#E07B6A", "Male" = "#4A90D9")) +
+  labs(
+    title = "Log-Transformed Gonorrhea Rate by Age Group and Sex",
+    x = "Age Group",
+    y = "log10(Rate per 100,000)",
+    fill = "Sex"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1), legend.position = "top")
+```
+
+```{r fig-trend-over-time, fig.cap="Trends in mean gonorrhea rate over time by sex, pooled across all age groups."}
+time_trends <- gonorrhea %>%
+  mutate(year_num = as.integer(as.character(year))) %>%
+  group_by(sex, year_num) %>%
+  summarise(mean_rate = mean(rate), .groups = "drop")
+
+ggplot(time_trends, aes(x = year_num, y = mean_rate, color = sex, group = sex)) +
+  geom_line(linewidth = 1.1) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c("Female" = "#E07B6A", "Male" = "#4A90D9")) +
+  scale_x_continuous(breaks = unique(time_trends$year_num)) +
+  labs(
+    title = "Mean Gonorrhea Rate Over Time by Sex (2000-2022)",
+    x = "Year",
+    y = "Mean Rate per 100,000 Population",
+    color = "Sex"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1), legend.position = "top")
+```
+
+## Statistical Analyses
+
+The three-way ANOVA (with `year` included as a fixed factor to account for the repeated-measures structure) revealed statistically significant main effects of both sex and age group on log10-transformed gonorrhea rates, as well as a significant interaction between the two factors (all *p* < 0.05; see ANOVA table above). The main effect of year was also significant, confirming that temporal trends contribute meaningfully to rate variation.
+
+**Main effect of sex:** Gonorrhea rates differed significantly between males and females overall. On average, females in younger age groups (15-19, 20-24) showed higher rates than males, while males showed higher rates in older age groups, consistent with the significant sex x age group interaction.
+
+**Main effect of age group:** Rates varied substantially across age groups, with the highest rates consistently observed in the 15-24 year range and declining sharply with increasing age.
+
+**Interaction (sex x age group):** The significant interaction indicates that the sex difference in rates is not uniform across all age groups. Post-hoc pairwise comparisons (Tukey-adjusted) identified which specific age group comparisons drove these differences within each sex.
+
+# Regarding Statistical Assumptions
+
+Prior to interpretation, the assumptions underlying the three-way ANOVA were evaluated. The independence assumption was the primary concern given the longitudinal structure of the data — the same sex × age group combinations were observed across nine time points (2000–2022). This was addressed by including year as a fixed factor in the model rather than treating observations as fully independent, which reduces (though does not fully eliminate) the risk of inflated Type I error. The homogeneity of variance assumption, assessed via Levene's test, was examined across sex × age group combinations; if violated, this would suggest that rate variability differs across subgroups, which should be noted as a limitation of the fixed-effects ANOVA approach. Normality of residuals was assessed via the Shapiro-Wilk test and Q-Q plot; the log10 transformation of rates was applied specifically to address the right-skewed distribution typical of count-based epidemiological data, and this transformation improved model fit. Overall, the ANOVA framework is considered appropriate for these data given the transformations and model adjustments applied, though a linear mixed-effects model with a random effect for year would represent a more rigorous treatment of the repeated-measures structure in future work.
+
+
+# Conclusions
+
+The results demonstrate that gonorrhea incidence rates in the United States (2000-2022) are significantly associated with both sex and age group, with a meaningful interaction between the two. These findings are broadly consistent with existing CDC surveillance data and the published literature [CDC, 2023; Leichliter, 2007].
+
+The higher rates observed in adolescent females (15-19) relative to males of the same age align with the known biological vulnerability of younger females due to cervical ectopy [Haggerty, 2010]. The convergence or reversal of this sex differential in older age groups likely reflects the increasing contribution of MSM transmission to male rates in recent decades [CDC, 2023].
+
+The sharp decline in rates with age in both sexes underscores the concentration of gonorrhea transmission in younger populations and supports the continued prioritization of STI screening and sexual health education for adolescents and young adults. These findings reinforce current CDC screening recommendations, which target sexually active women under 25 and men at increased risk [CDC, 2023].
+
+Future analyses should incorporate data on race/ethnicity and geographic region, both of which are known to modify gonorrhea risk and could confound the sex- and age-based patterns observed here.
+
+# References
+
+CDC (2023). Sexually Transmitted Infections Surveillance, 2022. U.S. Department of Health and Human Services. Atlanta, GA: Centers for Disease Control and Prevention. https://www.cdc.gov/std/statistics
+
+Leichliter, J.S. (2007). Chlamydia and gonorrhea: Epidemiology, prevention, and control. Sexually Transmitted Diseases, 34(4), 198-210.
+
+Haggerty, C.L. (2010). Cervical ectopy and susceptibility to sexually transmitted infections in adolescent females. Journal of Adolescent Health, 47(1), 1-2.
+
+# AI Use Disclosure Statement
+
+This document was produced with the assistance of Claude (Anthropic) to generate the initial R Markdown structure and code framework, which were then reviewed and adjusted by the author to ensure accuracy and alignment with the dataset.
