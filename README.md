@@ -9,7 +9,7 @@ This project analyzes gonorrhea (*Neisseria gonorrhoeae*) surveillance data from
 ## Author
 
 **[Lydia Michael, B.S.]**  
-Department of Public Health | 
+[Department of Public Health] | 
 MPH Infectious Disease Epidemiology Candidate |
 Cornell University |
 📧 [lm957@cornell.edu]
